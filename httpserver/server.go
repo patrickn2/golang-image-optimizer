@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/patrickn2/go-image-optimizator/handler"
+	"github.com/patrickn2/go-image-optimizer/handler"
 )
 
 func Start(h *handler.Handler, port, imagePath string) {

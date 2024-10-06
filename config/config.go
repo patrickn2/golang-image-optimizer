@@ -28,7 +28,7 @@ type envs struct {
 var envList envs
 
 func Init() *envs {
-	log.Println("Initializing Image Optimizator")
+	log.Println("Initializing Image optimizer")
 	if err := envconfig.Process(context.Background(), &envList); err != nil {
 		log.Fatalf("Error loading .env file: %v\n", err)
 	}

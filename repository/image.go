@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/patrickn2/go-image-optimizator/pkg/database"
+	"github.com/patrickn2/go-image-optimizer/pkg/database"
 )
 
 type ImageRepository struct {

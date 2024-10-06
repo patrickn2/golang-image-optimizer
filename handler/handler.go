@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/patrickn2/go-image-optimizator/service"
+	"github.com/patrickn2/go-image-optimizer/service"
 )
 
 type Handler struct {

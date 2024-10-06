@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/patrickn2/go-image-optimizator/config"
-	"github.com/patrickn2/go-image-optimizator/pkg/imagecompress"
-	"github.com/patrickn2/go-image-optimizator/repository"
+	"github.com/patrickn2/go-image-optimizer/config"
+	"github.com/patrickn2/go-image-optimizer/pkg/imagecompress"
+	"github.com/patrickn2/go-image-optimizer/repository"
 )
 
 type ImageService struct {

@@ -1,4 +1,4 @@
-module github.com/patrickn2/go-image-optimizator
+module github.com/patrickn2/go-image-optimizer
 
 go 1.23.1
 

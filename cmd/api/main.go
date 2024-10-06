@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/patrickn2/go-image-optimizator/config"
-	"github.com/patrickn2/go-image-optimizator/handler"
-	"github.com/patrickn2/go-image-optimizator/httpserver"
-	"github.com/patrickn2/go-image-optimizator/pkg/database"
-	"github.com/patrickn2/go-image-optimizator/pkg/imagecompress"
-	"github.com/patrickn2/go-image-optimizator/repository"
-	"github.com/patrickn2/go-image-optimizator/service"
+	"github.com/patrickn2/go-image-optimizer/config"
+	"github.com/patrickn2/go-image-optimizer/handler"
+	"github.com/patrickn2/go-image-optimizer/httpserver"
+	"github.com/patrickn2/go-image-optimizer/pkg/database"
+	"github.com/patrickn2/go-image-optimizer/pkg/imagecompress"
+	"github.com/patrickn2/go-image-optimizer/repository"
+	"github.com/patrickn2/go-image-optimizer/service"
 )
 
 func main() {
