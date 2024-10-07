@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/patrickn2/go-image-optimizer/config"
 	"github.com/patrickn2/go-image-optimizer/pkg/imagecompress"
@@ -34,84 +35,155 @@ var (
 	ErrInvalidImageType  = errors.New("invalid image type")
 	ErrInvalidImageSize  = errors.New("invalid image size")
 	ErrInvalidQuality    = errors.New("invalid quality")
+	ErrNotModified       = errors.New("not modified")
 )
 
-func (is *ImageService) Optimize(ctx context.Context, imageUrl string, width string, quality string) ([]byte, bool, error) {
+type OptimizeResponse struct {
+	ImageData []byte
+	Modified  *time.Time
+	Cache     bool
+	Error     error
+}
+
+type OptimizeRequest struct {
+	Ctx             context.Context
+	ImageUrl        string
+	Width           string
+	Quality         string
+	IfModifiedSince string
+	CacheControl    string
+}
+
+func (is *ImageService) Optimize(or *OptimizeRequest) *OptimizeResponse {
 	envs := config.GetEnvs()
-	if quality == "" {
-		quality = "75"
+	if or.Quality == "" {
+		or.Quality = "75"
 	}
-	if imageUrl == "" {
-		return nil, false, ErrInvalidImageUrl
+	if or.ImageUrl == "" {
+		return &OptimizeResponse{
+			Error: ErrInvalidImageUrl,
+		}
 	}
-	if width == "" || width == "0" {
-		return nil, false, ErrInvalidImageWidth
+	if or.Width == "" || or.Width == "0" {
+		return &OptimizeResponse{
+			Error: ErrInvalidImageWidth,
+		}
 	}
-	w, err := strconv.Atoi(width)
+	w, err := strconv.Atoi(or.Width)
 	if err != nil {
-		return nil, false, ErrInvalidImageWidth
+		return &OptimizeResponse{
+			Error: ErrInvalidImageWidth,
+		}
 	}
-	q, err := strconv.Atoi(quality)
+	q, err := strconv.Atoi(or.Quality)
 	if err != nil {
-		return nil, false, ErrInvalidQuality
+		return &OptimizeResponse{
+			Error: ErrInvalidQuality,
+		}
 	}
 	// Check if the quality is between 0 and 100
 	if q < 0 || q > 100 {
-		return nil, false, ErrInvalidQuality
+		return &OptimizeResponse{
+			Error: ErrInvalidQuality,
+		}
 	}
 	// Check if url is valid
-	u, err := url.ParseRequestURI(imageUrl)
+	u, err := url.ParseRequestURI(or.ImageUrl)
 	if err != nil {
-		return nil, false, ErrInvalidImageUrl
+		return &OptimizeResponse{
+			Error: ErrInvalidImageUrl,
+		}
 	}
 
 	// Generate image name
 	s := sha256.New()
-	s.Write([]byte(imageUrl))
+	s.Write([]byte(or.ImageUrl))
 	imageName := fmt.Sprintf("%x_%d_%d.webp", s.Sum(nil), w, q)
 
+	// Convert If-Modified-Since header to time.Time
+	var ifModified time.Time
+	if or.IfModifiedSince != "" {
+		ifModified, err = time.Parse(time.RFC1123, or.IfModifiedSince)
+		if err != nil {
+			ifModified = time.Now()
+		}
+	}
+
 	// Check if image is in the cache
-	optimizedImage, err := is.ir.GetImage(ctx, imageName)
+	optimizedImage, modified, err := is.ir.GetImage(or.Ctx, imageName)
+
 	if err != nil {
-		return nil, false, err
+		return &OptimizeResponse{
+			Error: err,
+		}
 	}
 	if optimizedImage != nil {
-		return optimizedImage, true, nil
+		// Check if image is modified and if cache is enabled and will return 304 Not Modified
+		if modified != nil && modified.After(ifModified) && or.CacheControl != "no-cache" && or.CacheControl != "no-store" && or.CacheControl != "" {
+			return &OptimizeResponse{
+				Modified: modified,
+				Cache:    true,
+			}
+		}
+		return &OptimizeResponse{
+			ImageData: optimizedImage,
+			Modified:  modified,
+			Cache:     true,
+		}
 	}
 
 	// Check image size
 	response, err := http.Head(u.String())
 	if err != nil {
-		return nil, false, ErrInvalidImageUrl
+		return &OptimizeResponse{
+			Error: ErrInvalidImageUrl,
+		}
 	}
 	defer response.Body.Close()
-	contentLength := response.ContentLength
 
-	if contentLength > int64(envs.MaxImageSize) {
-		return nil, false, ErrInvalidImageSize
+	if response.ContentLength > int64(envs.MaxImageSize) {
+		return &OptimizeResponse{
+			Error: ErrInvalidImageSize,
+		}
 	}
 	if !strings.HasPrefix(response.Header.Get("Content-Type"), "image/") {
-		return nil, false, ErrInvalidImageType
+		return &OptimizeResponse{
+			Error: ErrInvalidImageType,
+		}
 	}
 
 	// Download image
 	response, err = http.Get(u.String())
 	if err != nil {
-		return nil, false, ErrInvalidImageUrl
+		return &OptimizeResponse{
+			Error: ErrInvalidImageUrl,
+		}
 	}
 	defer response.Body.Close()
 
 	var imageBuffer bytes.Buffer
 	_, err = imageBuffer.ReadFrom(response.Body)
 	if err != nil {
-		return nil, false, err
+		return &OptimizeResponse{
+			Error: err,
+		}
 	}
 	// Resizing and compressing image to webp
 	compressedImage, err := is.ic.CompressImage(imageBuffer.Bytes(), q, w)
-	err = is.ir.SaveImage(ctx, imageName, compressedImage)
+	err = is.ir.SaveImage(or.Ctx, imageName, compressedImage)
 	if err != nil {
-		return nil, false, err
+		return &OptimizeResponse{
+			Error: err,
+		}
 	}
 
-	return compressedImage, false, nil
+	if modified == nil {
+		m := time.Now().UTC()
+		modified = &m
+	}
+	return &OptimizeResponse{
+		ImageData: compressedImage,
+		Modified:  modified,
+		Cache:     false,
+	}
 }

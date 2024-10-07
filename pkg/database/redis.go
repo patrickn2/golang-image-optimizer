@@ -30,13 +30,24 @@ func NewDatabaseRedis(host string, port int, password string, db int, ce uint) *
 }
 
 func (db *PkgDatabaseRedis) Set(ctx context.Context, key string, data []byte) error {
+	err := db.conn.Set(ctx, key+":created_at", time.Now().UTC(), time.Minute*time.Duration(db.cacheExpiration)).Err()
+	if err != nil {
+		return err
+	}
 	return db.conn.Set(ctx, key, data, time.Minute*time.Duration(db.cacheExpiration)).Err()
 }
 
-func (db *PkgDatabaseRedis) Get(ctx context.Context, key string) ([]byte, error) {
+func (db *PkgDatabaseRedis) Get(ctx context.Context, key string) ([]byte, *time.Time, error) {
+	modified, err := db.conn.Get(ctx, key+":created_at").Time()
+	if err != nil {
+		if err != redis.Nil {
+			return nil, nil, err
+		}
+		return nil, nil, nil
+	}
 	data, err := db.conn.Get(ctx, key).Bytes()
 	if err != nil && err != redis.Nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return data, nil
+	return data, &modified, nil
 }

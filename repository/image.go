@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/patrickn2/go-image-optimizer/pkg/database"
 )
@@ -16,7 +17,7 @@ func NewImageRepository(db database.PkgDatabaseInterface) *ImageRepository {
 	}
 }
 
-func (ir *ImageRepository) GetImage(ctx context.Context, imageName string) ([]byte, error) {
+func (ir *ImageRepository) GetImage(ctx context.Context, imageName string) ([]byte, *time.Time, error) {
 	return ir.db.Get(ctx, imageName)
 }
 
