@@ -23,7 +23,7 @@ func NewDatabaseInMemory(cacheExpiration uint) *PkgDatabaseInMemory {
 		cacheExpiration: cacheExpiration,
 	}
 	if cacheExpiration != 0 {
-		go dbInMem.checkExpiredImages()
+		go dbInMem.checkExpiredData()
 	}
 
 	return dbInMem
@@ -46,16 +46,16 @@ func (db *PkgDatabaseInMemory) Get(ctx context.Context, key string) ([]byte, *ti
 	return data.Data, &data.CreatedAt, nil
 }
 
-func (db *PkgDatabaseInMemory) checkExpiredImages() {
+func (db *PkgDatabaseInMemory) checkExpiredData() {
 	for {
 		time.Sleep(time.Minute)
-		log.Println("Checking for expired images")
+		log.Println("Checking for expired data")
 		for imageName, image := range db.data {
 			if time.Now().After(image.ExpireAt) {
-				log.Printf("Image %s expired\n", imageName)
+				log.Printf("Data %s expired\n", imageName)
 				delete(db.data, imageName)
 			}
 		}
-		log.Println("Done checking for expired images")
+		log.Println("Done checking for expired data")
 	}
 }
