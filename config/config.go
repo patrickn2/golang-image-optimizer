@@ -15,19 +15,24 @@ import (
 )
 
 type Envs struct {
-	ApiPort         string `env:"API_PORT, required"`
-	ImageApiPath    string `env:"IMAGE_API_PATH"`
-	BrokenImagePath string `env:"BROKEN_IMAGE_PATH"`
-	DefaultQuality  int    `env:"DEFAULT_QUALITY"`
-	MIS             string `env:"MAX_IMAGE_SIZE, required"`
-	MaxImageSize    int64
-	CacheType       string `env:"CACHE_TYPE, required"`
-	CachePath       string `env:"CACHE_PATH"`
-	CacheExpiration uint   `env:"CACHE_EXPIRATION"`
-	RedisHost       string `env:"REDIS_HOST"`
-	RedisPort       int    `env:"REDIS_PORT"`
-	RedisPassword   string `env:"REDIS_PASSWORD"`
-	RedisDB         int    `env:"REDIS_DB"`
+	ApiPort          string `env:"API_PORT, required"`
+	ImageApiPath     string `env:"IMAGE_API_PATH"`
+	BrokenImagePath  string `env:"BROKEN_IMAGE_PATH"`
+	DefaultQuality   int    `env:"DEFAULT_QUALITY"`
+	MIS              string `env:"MAX_IMAGE_SIZE, required"`
+	MaxImageSize     int64
+	CacheType        string `env:"CACHE_TYPE, required"`
+	CachePath        string `env:"CACHE_PATH"`
+	CacheExpiration  uint   `env:"CACHE_EXPIRATION"`
+	RedisHost        string `env:"REDIS_HOST"`
+	RedisPort        int    `env:"REDIS_PORT"`
+	RedisPassword    string `env:"REDIS_PASSWORD"`
+	RedisDB          int    `env:"REDIS_DB"`
+	MemcacheHost     string `env:"MEMCACHE_HOST"`
+	MemcachePort     int    `env:"MEMCACHE_PORT"`
+	MemcacheUser     string `env:"MEMCACHE_USERNAME"`
+	MemcachePassword string `env:"MEMCACHE_PASSWORD"`
+
 	BrokenImageData []byte
 }
 
@@ -47,7 +52,7 @@ func Init() *Envs {
 		log.Fatalf("DEFAULT_QUALITY env value is invalid\n")
 	}
 
-	if envList.CacheType != "file" && envList.CacheType != "redis" && envList.CacheType != "in-memory" {
+	if envList.CacheType != "file" && envList.CacheType != "redis" && envList.CacheType != "in-memory" && envList.CacheType != "memcache" {
 		log.Fatalf("CACHE_TYPE env value is invalid\n")
 	}
 	if envList.CacheType == "file" && envList.CachePath == "" {
@@ -101,6 +106,9 @@ func Init() *Envs {
 	}
 	if envList.CacheType == "redis" {
 		log.Printf("Your Images will be saved in the Redis cache\n")
+	}
+	if envList.CacheType == "memcache" {
+		log.Printf("Your Images will be saved in the Memcache cache\n")
 	}
 	log.Printf("API Image Path: %s\n", envList.ImageApiPath)
 

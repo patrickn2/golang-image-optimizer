@@ -20,6 +20,8 @@ func main() {
 		db = database.NewDatabaseFile(envs.CachePath)
 	case "redis":
 		db = database.NewDatabaseRedis(envs.RedisHost, envs.RedisPort, envs.RedisPassword, envs.RedisDB, envs.CacheExpiration)
+	case "memcache":
+		db = database.NewDatabaseMemcache(envs.MemcacheHost, envs.MemcachePort, envs.MemcacheUser, envs.MemcachePassword, envs.CacheExpiration)
 	case "in-memory":
 		db = database.NewDatabaseInMemory(envs.CacheExpiration)
 	}

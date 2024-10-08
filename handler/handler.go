@@ -57,6 +57,7 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 		Quality:         intQuality,
 		IfModifiedSince: ifModifiedSince,
 		CacheControl:    cacheControl,
+		MaxImageSize:    h.envs.MaxImageSize,
 	}
 
 	optimizedResponse, err := h.is.Optimize(request)
