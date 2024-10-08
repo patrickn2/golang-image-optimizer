@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/patrickn2/go-image-optimizer/config"
 	"github.com/patrickn2/go-image-optimizer/pkg/imagecompress"
 	"github.com/patrickn2/go-image-optimizer/repository"
 )
@@ -53,11 +52,10 @@ type OptimizeRequest struct {
 	IfModifiedSince string
 	CacheControl    string
 	BrokenImage     bool
+	MaxImageSize    int64
 }
 
 func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error) {
-	envs := config.GetEnvs()
-
 	_, err := url.ParseRequestURI(or.ImageUrl)
 	if err != nil {
 		return nil, ErrInvalidImageUrl
@@ -104,7 +102,7 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 	}
 	defer response.Body.Close()
 
-	if response.ContentLength > int64(envs.MaxImageSize) {
+	if response.ContentLength > or.MaxImageSize {
 		return nil, ErrInvalidImageSize
 
 	}
@@ -151,10 +149,17 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 	}, nil
 }
 
-func (is *ImageService) BrokenImage(ctx context.Context, width, height int) (*OptimizeResponse, error) {
-	envs := config.GetEnvs()
-	brokenImageName := fmt.Sprintf("broken_%d_%d_%d.webp", 75, width, height)
-	compressedImage, modified, err := is.ir.GetImage(ctx, brokenImageName)
+type BrokenImageRequest struct {
+	Ctx             context.Context
+	Quality         int
+	Width           int
+	Height          int
+	BrokenImageData []byte
+}
+
+func (is *ImageService) BrokenImage(bir *BrokenImageRequest) (*OptimizeResponse, error) {
+	brokenImageName := fmt.Sprintf("broken_%d_%d_%d.webp", bir.Quality, bir.Width, bir.Height)
+	compressedImage, modified, err := is.ir.GetImage(bir.Ctx, brokenImageName)
 	if err != nil {
 		return nil, err
 	}
@@ -167,17 +172,17 @@ func (is *ImageService) BrokenImage(ctx context.Context, width, height int) (*Op
 	}
 
 	compressRequest := &imagecompress.CompressImageRequest{
-		ImageData: envs.BrokenImageData,
-		Quality:   75,
-		Width:     width,
-		Height:    height,
+		ImageData: bir.BrokenImageData,
+		Quality:   bir.Quality,
+		Width:     bir.Width,
+		Height:    bir.Height,
 	}
 
 	compressedImage, err = is.ic.CompressImage(compressRequest)
 	if err != nil {
 		return nil, err
 	}
-	err = is.ir.SaveImage(ctx, brokenImageName, compressedImage)
+	err = is.ir.SaveImage(bir.Ctx, brokenImageName, compressedImage)
 	if err != nil {
 		log.Printf("Error saving Broken Image to cache: %v\n", err)
 	}

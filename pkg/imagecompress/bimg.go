@@ -1,6 +1,8 @@
 package imagecompress
 
-import "github.com/h2non/bimg"
+import (
+	"github.com/h2non/bimg"
+)
 
 type PkgImgCompress struct {
 }

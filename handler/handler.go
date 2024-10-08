@@ -6,16 +6,19 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/patrickn2/go-image-optimizer/config"
 	"github.com/patrickn2/go-image-optimizer/service"
 )
 
 type Handler struct {
-	is *service.ImageService
+	is   *service.ImageService
+	envs *config.Envs
 }
 
-func New(is *service.ImageService) *Handler {
+func New(is *service.ImageService, e *config.Envs) *Handler {
 	return &Handler{
-		is: is,
+		is:   is,
+		envs: e,
 	}
 }
 
@@ -28,14 +31,8 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 	cacheControl := r.Header.Get("Cache-Control")
 
 	intQuality, err := strconv.Atoi(quality)
-	if err != nil {
-		intQuality = 75
-	}
-	if intQuality < 0 {
-		intQuality = 75
-	}
-	if intQuality > 100 {
-		intQuality = 100
+	if err != nil || intQuality < 0 || intQuality > 100 {
+		intQuality = h.envs.DefaultQuality
 	}
 
 	intWidth, err := strconv.Atoi(width)
@@ -64,7 +61,14 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 
 	optimizedResponse, err := h.is.Optimize(request)
 	if err != nil {
-		optimizedResponse, err = h.is.BrokenImage(r.Context(), intWidth, intHeight)
+		brokenImageRequest := &service.BrokenImageRequest{
+			Ctx:             r.Context(),
+			BrokenImageData: h.envs.BrokenImageData,
+			Quality:         intQuality,
+			Width:           intWidth,
+			Height:          intHeight,
+		}
+		optimizedResponse, err = h.is.BrokenImage(brokenImageRequest)
 		if err != nil {
 			log.Printf("Error optimizing image: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)

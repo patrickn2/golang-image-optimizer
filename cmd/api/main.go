@@ -26,6 +26,6 @@ func main() {
 
 	imageRepository := repository.NewImageRepository(db)
 	imageService := service.NewImageService(ic, imageRepository)
-	h := handler.New(imageService)
+	h := handler.New(imageService, envs)
 	httpserver.Start(h, envs.ApiPort, envs.ImageApiPath)
 }

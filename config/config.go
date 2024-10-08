@@ -14,10 +14,11 @@ import (
 	"github.com/sethvargo/go-envconfig"
 )
 
-type envs struct {
+type Envs struct {
 	ApiPort         string `env:"API_PORT, required"`
 	ImageApiPath    string `env:"IMAGE_API_PATH"`
 	BrokenImagePath string `env:"BROKEN_IMAGE_PATH"`
+	DefaultQuality  int    `env:"DEFAULT_QUALITY"`
 	MIS             string `env:"MAX_IMAGE_SIZE, required"`
 	MaxImageSize    int64
 	CacheType       string `env:"CACHE_TYPE, required"`
@@ -30,9 +31,9 @@ type envs struct {
 	BrokenImageData []byte
 }
 
-var envList envs
+var envList Envs
 
-func Init() *envs {
+func Init() *Envs {
 	log.Println("Initializing Image optimizer")
 	if err := envconfig.Process(context.Background(), &envList); err != nil {
 		log.Fatalf("Error loading .env file: %v\n", err)
@@ -42,6 +43,9 @@ func Init() *envs {
 		log.Fatalf("Invalid MAX_IMAGE_SIZE env value: %v\n", err)
 	}
 	envList.MaxImageSize = MaxImageSize
+	if envList.DefaultQuality < 1 || envList.DefaultQuality > 100 {
+		log.Fatalf("DEFAULT_QUALITY env value is invalid\n")
+	}
 
 	if envList.CacheType != "file" && envList.CacheType != "redis" && envList.CacheType != "in-memory" {
 		log.Fatalf("CACHE_TYPE env value is invalid\n")
@@ -84,7 +88,6 @@ func Init() *envs {
 				log.Fatalf("Error loading broken image: %v\n", err)
 			}
 			envList.BrokenImageData = imageBuffer.Bytes()
-
 		}
 
 	}
@@ -101,10 +104,6 @@ func Init() *envs {
 	}
 	log.Printf("API Image Path: %s\n", envList.ImageApiPath)
 
-	return &envList
-}
-
-func GetEnvs() *envs {
 	return &envList
 }
 
