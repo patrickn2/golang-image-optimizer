@@ -12,9 +12,8 @@ import (
 
 func main() {
 	envs := config.Init()
-	ic := imagecompress.NewImageCompress()
-	var db database.PkgDatabaseInterface
 
+	var db database.PkgDatabaseInterface
 	switch envs.CacheType {
 	case "file":
 		db = database.NewDatabaseFile(envs.CachePath)
@@ -27,6 +26,7 @@ func main() {
 	}
 
 	imageRepository := repository.NewImageRepository(db)
+	ic := imagecompress.NewImageCompress()
 	imageService := service.NewImageService(ic, imageRepository)
 	h := handler.New(imageService, envs)
 	httpserver.Start(h, envs.ApiPort, envs.ImageApiPath)
