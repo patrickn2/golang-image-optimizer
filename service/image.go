@@ -6,7 +6,9 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -49,10 +51,16 @@ type OptimizeRequest struct {
 	Quality         int
 	IfModifiedSince string
 	CacheControl    string
+	BrokenImage     bool
 }
 
 func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error) {
 	envs := config.GetEnvs()
+
+	_, err := url.ParseRequestURI(or.ImageUrl)
+	if err != nil {
+		return nil, ErrInvalidImageUrl
+	}
 
 	// Generate image name
 	s := sha256.New()
@@ -61,10 +69,8 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 
 	// Check if image is in the cache
 	optimizedImage, modified, err := is.ir.GetImage(or.Ctx, imageName)
-
 	if err != nil {
 		return nil, err
-
 	}
 	if optimizedImage != nil {
 		// Convert If-Modified-Since header to time.Time
@@ -119,9 +125,12 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 	}
 	// Resizing and compressing image to webp
 	compressedImage, err := is.ic.CompressImage(imageBuffer.Bytes(), or.Quality, or.Width)
-	err = is.ir.SaveImage(or.Ctx, imageName, compressedImage)
 	if err != nil {
 		return nil, err
+	}
+	err = is.ir.SaveImage(or.Ctx, imageName, compressedImage)
+	if err != nil {
+		log.Printf("Error saving Image to cache: %v\n", err)
 	}
 
 	if modified == nil {
@@ -135,12 +144,36 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 	}, nil
 }
 
-func (is *ImageService) BrokenImage(ctx context.Context, width int) ([]byte, error) {
+func (is *ImageService) BrokenImage(ctx context.Context, width int) (*OptimizeResponse, error) {
 	envs := config.GetEnvs()
-	// Still Needs caching
-	img, err := is.ic.CompressImage(envs.BrokenImageData, 75, width)
+	brokenImageName := fmt.Sprintf("broken_%d_%d.webp", width, 75)
+	compressedImage, modified, err := is.ir.GetImage(ctx, brokenImageName)
 	if err != nil {
 		return nil, err
 	}
-	return img, nil
+	if compressedImage != nil {
+		return &OptimizeResponse{
+			ImageData: compressedImage,
+			Modified:  modified,
+			Cache:     true,
+		}, nil
+	}
+
+	compressedImage, err = is.ic.CompressImage(envs.BrokenImageData, 75, width)
+	if err != nil {
+		return nil, err
+	}
+	err = is.ir.SaveImage(ctx, brokenImageName, compressedImage)
+	if err != nil {
+		log.Printf("Error saving Image to cache: %v\n", err)
+	}
+	if modified == nil {
+		m := time.Now().UTC()
+		modified = &m
+	}
+	return &OptimizeResponse{
+		ImageData: compressedImage,
+		Modified:  modified,
+		Cache:     false,
+	}, nil
 }

@@ -3,7 +3,6 @@ package handler
 import (
 	"log"
 	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -47,18 +46,6 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	// Check if url is valid
-	_, err = url.ParseRequestURI(imageUrl)
-	if err != nil {
-		brokenImage, err := h.is.BrokenImage(r.Context(), intWidth)
-		if err != nil {
-			log.Printf("Error optimizing image: %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Write(brokenImage)
-		return
-	}
 
 	request := &service.OptimizeRequest{
 		Ctx:             r.Context(),
@@ -71,14 +58,12 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 
 	optimizedResponse, err := h.is.Optimize(request)
 	if err != nil {
-		brokenImage, err := h.is.BrokenImage(r.Context(), intWidth)
+		optimizedResponse, err = h.is.BrokenImage(r.Context(), intWidth)
 		if err != nil {
 			log.Printf("Error optimizing image: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Write(brokenImage)
-		return
 	}
 
 	cacheMsg := "MISS"
