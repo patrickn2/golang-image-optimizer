@@ -47,6 +47,7 @@ type OptimizeResponse struct {
 type OptimizeRequest struct {
 	Ctx             context.Context
 	ImageUrl        string
+	Height          int
 	Width           int
 	Quality         int
 	IfModifiedSince string
@@ -65,7 +66,7 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 	// Generate image name
 	s := sha256.New()
 	s.Write([]byte(or.ImageUrl))
-	imageName := fmt.Sprintf("%x_%d_%d.webp", s.Sum(nil), or.Width, or.Quality)
+	imageName := fmt.Sprintf("%x_%d_%d_%d.webp", s.Sum(nil), or.Quality, or.Width, or.Height)
 
 	// Check if image is in the cache
 	optimizedImage, modified, err := is.ir.GetImage(or.Ctx, imageName)
@@ -124,7 +125,13 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 		return nil, err
 	}
 	// Resizing and compressing image to webp
-	compressedImage, err := is.ic.CompressImage(imageBuffer.Bytes(), or.Quality, or.Width)
+	compressRequest := &imagecompress.CompressImageRequest{
+		ImageData: imageBuffer.Bytes(),
+		Quality:   or.Quality,
+		Width:     or.Width,
+		Height:    or.Height,
+	}
+	compressedImage, err := is.ic.CompressImage(compressRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -144,9 +151,9 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 	}, nil
 }
 
-func (is *ImageService) BrokenImage(ctx context.Context, width int) (*OptimizeResponse, error) {
+func (is *ImageService) BrokenImage(ctx context.Context, width, height int) (*OptimizeResponse, error) {
 	envs := config.GetEnvs()
-	brokenImageName := fmt.Sprintf("broken_%d_%d.webp", width, 75)
+	brokenImageName := fmt.Sprintf("broken_%d_%d_%d.webp", width, height, 75)
 	compressedImage, modified, err := is.ir.GetImage(ctx, brokenImageName)
 	if err != nil {
 		return nil, err
@@ -159,13 +166,13 @@ func (is *ImageService) BrokenImage(ctx context.Context, width int) (*OptimizeRe
 		}, nil
 	}
 
-	compressedImage, err = is.ic.CompressImage(envs.BrokenImageData, 75, width)
+	compressedImage, err = is.ic.CompressImage(envs.BrokenImageData, 75, width, height)
 	if err != nil {
 		return nil, err
 	}
 	err = is.ir.SaveImage(ctx, brokenImageName, compressedImage)
 	if err != nil {
-		log.Printf("Error saving Image to cache: %v\n", err)
+		log.Printf("Error saving Broken Image to cache: %v\n", err)
 	}
 	if modified == nil {
 		m := time.Now().UTC()

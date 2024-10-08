@@ -22,6 +22,7 @@ func New(is *service.ImageService) *Handler {
 func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 	imageUrl := r.URL.Query().Get("url")
 	width := r.URL.Query().Get("w")
+	height := r.URL.Query().Get("h")
 	quality := r.URL.Query().Get("q")
 	ifModifiedSince := r.Header.Get("If-Modified-Since")
 	cacheControl := r.Header.Get("Cache-Control")
@@ -46,11 +47,16 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	intHeight, err := strconv.Atoi(height)
+	if err != nil || intHeight < 1 {
+		intHeight = 0
+	}
 
 	request := &service.OptimizeRequest{
 		Ctx:             r.Context(),
 		ImageUrl:        imageUrl,
 		Width:           intWidth,
+		Height:          intHeight,
 		Quality:         intQuality,
 		IfModifiedSince: ifModifiedSince,
 		CacheControl:    cacheControl,
@@ -58,7 +64,7 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 
 	optimizedResponse, err := h.is.Optimize(request)
 	if err != nil {
-		optimizedResponse, err = h.is.BrokenImage(r.Context(), intWidth)
+		optimizedResponse, err = h.is.BrokenImage(r.Context(), intWidth, intHeight)
 		if err != nil {
 			log.Printf("Error optimizing image: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
