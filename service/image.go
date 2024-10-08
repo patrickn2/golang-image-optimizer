@@ -153,7 +153,7 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 
 func (is *ImageService) BrokenImage(ctx context.Context, width, height int) (*OptimizeResponse, error) {
 	envs := config.GetEnvs()
-	brokenImageName := fmt.Sprintf("broken_%d_%d_%d.webp", width, height, 75)
+	brokenImageName := fmt.Sprintf("broken_%d_%d_%d.webp", 75, width, height)
 	compressedImage, modified, err := is.ir.GetImage(ctx, brokenImageName)
 	if err != nil {
 		return nil, err
@@ -166,7 +166,14 @@ func (is *ImageService) BrokenImage(ctx context.Context, width, height int) (*Op
 		}, nil
 	}
 
-	compressedImage, err = is.ic.CompressImage(envs.BrokenImageData, 75, width, height)
+	compressRequest := &imagecompress.CompressImageRequest{
+		ImageData: envs.BrokenImageData,
+		Quality:   75,
+		Width:     width,
+		Height:    height,
+	}
+
+	compressedImage, err = is.ic.CompressImage(compressRequest)
 	if err != nil {
 		return nil, err
 	}
