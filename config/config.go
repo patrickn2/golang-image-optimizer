@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -15,23 +16,24 @@ import (
 )
 
 type Envs struct {
-	ApiPort          string `env:"API_PORT, required"`
-	ImageApiPath     string `env:"IMAGE_API_PATH"`
-	BrokenImagePath  string `env:"BROKEN_IMAGE_PATH"`
-	DefaultQuality   int    `env:"DEFAULT_QUALITY"`
-	MIS              string `env:"MAX_IMAGE_SIZE, required"`
-	MaxImageSize     int64
-	CacheType        string `env:"CACHE_TYPE, required"`
-	CachePath        string `env:"CACHE_PATH"`
-	CacheExpiration  uint   `env:"CACHE_EXPIRATION"`
-	RedisHost        string `env:"REDIS_HOST"`
-	RedisPort        int    `env:"REDIS_PORT"`
-	RedisPassword    string `env:"REDIS_PASSWORD"`
-	RedisDB          int    `env:"REDIS_DB"`
-	MemcacheHost     string `env:"MEMCACHE_HOST"`
-	MemcachePort     int    `env:"MEMCACHE_PORT"`
-	MemcacheUser     string `env:"MEMCACHE_USERNAME"`
-	MemcachePassword string `env:"MEMCACHE_PASSWORD"`
+	ApiPort             string `env:"API_PORT, required"`
+	ImageApiPath        string `env:"IMAGE_API_PATH"`
+	BrokenImagePath     string `env:"BROKEN_IMAGE_PATH"`
+	DefaultQuality      int    `env:"DEFAULT_QUALITY"`
+	MIS                 string `env:"MAX_IMAGE_SIZE, required"`
+	MaxImageSize        int64
+	CacheType           string `env:"CACHE_TYPE, required"`
+	CachePath           string `env:"CACHE_PATH"`
+	CacheExpiration     uint   `env:"CACHE_EXPIRATION"`
+	RedisHost           string `env:"REDIS_HOST"`
+	RedisPort           int    `env:"REDIS_PORT"`
+	RedisPassword       string `env:"REDIS_PASSWORD"`
+	RedisDB             int    `env:"REDIS_DB"`
+	MemcacheHost        string `env:"MEMCACHE_HOST"`
+	MemcachePort        int    `env:"MEMCACHE_PORT"`
+	MemcacheUser        string `env:"MEMCACHE_USERNAME"`
+	MemcachePassword    string `env:"MEMCACHE_PASSWORD"`
+	AuthorizedHostnames string `env:"AUTHORIZED_HOSTNAMES"`
 
 	BrokenImageData []byte
 }
@@ -61,6 +63,12 @@ func Init() *Envs {
 	if envList.CacheType == "redis" && (envList.RedisPort == 0) {
 		log.Fatalf("REDIS_PORT env value is required when CACHE_TYPE is redis\n")
 	}
+	if envList.AuthorizedHostnames != "" {
+		if _, err := regexp.Compile(envList.AuthorizedHostnames); err != nil {
+			log.Fatalf("AUTHORIZED_HOSTNAME env value regex is invalid\n")
+		}
+	}
+
 	// Initialization Messages
 	if envList.ImageApiPath == "" {
 		envList.ImageApiPath = "/image"

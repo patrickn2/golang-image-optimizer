@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -29,12 +30,13 @@ func NewImageService(ic imagecompress.PkgImgCompressInterface, ir *repository.Im
 }
 
 var (
-	ErrInvalidImageWidth = errors.New("invalid image width")
-	ErrInvalidImageUrl   = errors.New("invalid image url")
-	ErrInvalidImageType  = errors.New("invalid image type")
-	ErrInvalidImageSize  = errors.New("invalid image size")
-	ErrInvalidQuality    = errors.New("invalid quality")
-	ErrNotModified       = errors.New("not modified")
+	ErrInvalidImageWidth   = errors.New("invalid image width")
+	ErrInvalidImageUrl     = errors.New("invalid image url")
+	ErrDomainNotAuthorized = errors.New("domain not authorized")
+	ErrInvalidImageType    = errors.New("invalid image type")
+	ErrInvalidImageSize    = errors.New("invalid image size")
+	ErrInvalidQuality      = errors.New("invalid quality")
+	ErrNotModified         = errors.New("not modified")
 )
 
 type OptimizeResponse struct {
@@ -44,21 +46,28 @@ type OptimizeResponse struct {
 }
 
 type OptimizeRequest struct {
-	Ctx             context.Context
-	ImageUrl        string
-	Height          int
-	Width           int
-	Quality         int
-	IfModifiedSince string
-	CacheControl    string
-	BrokenImage     bool
-	MaxImageSize    int64
+	Ctx               context.Context
+	ImageUrl          string
+	Height            int
+	Width             int
+	Quality           int
+	IfModifiedSince   string
+	CacheControl      string
+	BrokenImage       bool
+	MaxImageSize      int64
+	AuthorizedDomains string
 }
 
 func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error) {
-	_, err := url.ParseRequestURI(or.ImageUrl)
+	u, err := url.ParseRequestURI(or.ImageUrl)
 	if err != nil {
 		return nil, ErrInvalidImageUrl
+	}
+
+	if or.AuthorizedDomains != "" {
+		if !regexp.MustCompile(or.AuthorizedDomains).MatchString(u.Host) {
+			return nil, ErrDomainNotAuthorized
+		}
 	}
 
 	// Generate image name

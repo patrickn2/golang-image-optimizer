@@ -50,27 +50,39 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request := &service.OptimizeRequest{
-		Ctx:             r.Context(),
-		ImageUrl:        imageUrl,
-		Width:           intWidth,
-		Height:          intHeight,
-		Quality:         intQuality,
-		IfModifiedSince: ifModifiedSince,
-		CacheControl:    cacheControl,
-		MaxImageSize:    h.envs.MaxImageSize,
+		Ctx:               r.Context(),
+		ImageUrl:          imageUrl,
+		Width:             intWidth,
+		Height:            intHeight,
+		Quality:           intQuality,
+		IfModifiedSince:   ifModifiedSince,
+		CacheControl:      cacheControl,
+		MaxImageSize:      h.envs.MaxImageSize,
+		AuthorizedDomains: h.envs.AuthorizedHostnames,
 	}
 
 	optimizedResponse, err := h.is.Optimize(request)
 	if err != nil {
-		brokenImageRequest := &service.BrokenImageRequest{
-			Ctx:             r.Context(),
-			BrokenImageData: h.envs.BrokenImageData,
-			Quality:         intQuality,
-			Width:           intWidth,
-			Height:          intHeight,
-		}
-		optimizedResponse, err = h.is.BrokenImage(brokenImageRequest)
-		if err != nil {
+		switch err {
+		case service.ErrDomainNotAuthorized:
+			log.Printf("Error optimizing image: %v\n", err)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		case service.ErrInvalidImageUrl:
+			brokenImageRequest := &service.BrokenImageRequest{
+				Ctx:             r.Context(),
+				BrokenImageData: h.envs.BrokenImageData,
+				Quality:         intQuality,
+				Width:           intWidth,
+				Height:          intHeight,
+			}
+			optimizedResponse, err = h.is.BrokenImage(brokenImageRequest)
+			if err != nil {
+				log.Printf("Error optimizing image: %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		default:
 			log.Printf("Error optimizing image: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
