@@ -8,6 +8,7 @@ type PkgImgGoVips struct {
 }
 
 func NewImageGoVips() *PkgImgGoVips {
+	vips.LoggingSettings(nil, vips.LogLevelError)
 	vips.Startup(nil)
 	return &PkgImgGoVips{}
 }
@@ -27,34 +28,38 @@ func (ic *PkgImgGoVips) CompressImage(c *CompressImageRequest) ([]byte, error) {
 
 	var vScale float64 = -1
 	if c.Height != 0 {
-		vScale = float64(c.Height) / float64(img.Height())
+		h := c.Height
+		if h > img.Height() {
+			h = img.Height()
+		}
+		vScale = float64(h) / float64(img.Height())
 	}
-
-	hScale := float64(c.Width) / float64(img.Width())
+	w := c.Width
+	if w > img.Width() {
+		w = img.Width()
+	}
+	hScale := float64(w) / float64(img.Width())
 	err = img.ResizeWithVScale(hScale, vScale, vips.KernelAuto)
 	if err != nil {
 		return nil, err
 	}
 
-	var vipsImageType vips.ImageType
+	var exportParams *vips.ExportParams
 	switch c.Type {
 	case "image/png":
-		vipsImageType = vips.ImageTypePNG
+		exportParams = vips.NewDefaultPNGExportParams()
 	case "image/jpeg":
-		vipsImageType = vips.ImageTypeJPEG
+		exportParams = vips.NewDefaultJPEGExportParams()
 	case "image/gif":
-		vipsImageType = vips.ImageTypeGIF
+		exportParams = vips.NewDefaultExportParams()
+		exportParams.Format = vips.ImageTypeGIF
 	case "image/avif":
-		vipsImageType = vips.ImageTypeAVIF
+		exportParams = vips.NewDefaultExportParams()
+		exportParams.Format = vips.ImageTypeAVIF
 	default:
-		vipsImageType = vips.ImageTypeWEBP
+		exportParams = vips.NewDefaultWEBPExportParams()
 	}
-	exportParams :=
-		vips.ExportParams{
-			Quality: c.Quality,
-			Format:  vipsImageType,
-			Effort:  4,
-		}
-	image, _, err := img.Export(&exportParams)
+	exportParams.Quality = c.Quality
+	image, _, err := img.Export(exportParams)
 	return image, err
 }
