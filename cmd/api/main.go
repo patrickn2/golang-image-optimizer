@@ -26,7 +26,8 @@ func main() {
 	}
 
 	imageRepository := repository.NewImageRepository(db)
-	ic := imagecompress.NewImageCompress()
+	ic := imagecompress.NewImageGoVips()
+	defer ic.CloseVips()
 	imageService := service.NewImageService(ic, imageRepository)
 	h := handler.New(imageService, envs)
 	httpserver.Start(h, envs.ApiPort, envs.ImageApiPath)
