@@ -44,22 +44,32 @@ func (ic *PkgImgGoVips) CompressImage(c *CompressImageRequest) ([]byte, error) {
 		return nil, err
 	}
 
-	var exportParams *vips.ExportParams
+	var newImage []byte
+
 	switch c.NewType {
 	case "image/png":
-		exportParams = vips.NewDefaultPNGExportParams()
+		p := vips.NewPngExportParams()
+		p.Quality = c.Quality
+		newImage, _, err = img.ExportPng(p)
 	case "image/jpeg":
-		exportParams = vips.NewDefaultJPEGExportParams()
+		p := vips.NewJpegExportParams()
+		p.Quality = c.Quality
+		newImage, _, err = img.ExportJpeg(p)
 	case "image/gif":
-		exportParams = vips.NewDefaultExportParams()
-		exportParams.Format = vips.ImageTypeGIF
+		p := vips.NewGifExportParams()
+		p.Quality = c.Quality
+		newImage, _, err = img.ExportGIF(p)
 	case "image/avif":
-		exportParams = vips.NewDefaultExportParams()
-		exportParams.Format = vips.ImageTypeAVIF
+		p := vips.NewAvifExportParams()
+		p.Quality = c.Quality
+		newImage, _, err = img.ExportAvif(p)
 	default:
-		exportParams = vips.NewDefaultWEBPExportParams()
+		p := vips.NewWebpExportParams()
+		p.Quality = c.Quality
+		newImage, _, err = img.ExportWebp(p)
 	}
-	exportParams.Quality = c.Quality
-	image, _, err := img.Export(exportParams)
-	return image, err
+	if err != nil {
+		return nil, err
+	}
+	return newImage, err
 }
