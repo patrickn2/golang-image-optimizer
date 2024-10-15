@@ -166,12 +166,18 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 		Quality:   or.Quality,
 		Width:     or.Width,
 		Height:    or.Height,
-		Type:      newImageType,
+		NewType:   newImageType,
 	}
 	compressedImage, err := is.ic.CompressImage(compressRequest)
 	if err != nil {
 		return nil, err
 	}
+
+	// If the mew image is bigger than the original image, save the old image instead of the new one
+	if len(compressedImage) > imageBuffer.Len() && newImageType == downloadedImageRealType {
+		compressedImage = imageBuffer.Bytes()
+	}
+
 	err = is.ir.SaveImage(or.Ctx, imageName, compressedImage)
 	if err != nil {
 		log.Printf("Error saving Image to cache: %v\n", err)
@@ -221,7 +227,7 @@ func (is *ImageService) BrokenImage(bir *BrokenImageRequest) (*OptimizeResponse,
 		Quality:   bir.Quality,
 		Width:     bir.Width,
 		Height:    bir.Height,
-		Type:      newImageType,
+		NewType:   newImageType,
 	}
 
 	compressedImage, err = is.ic.CompressImage(compressRequest)

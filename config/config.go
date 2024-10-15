@@ -41,7 +41,7 @@ type Envs struct {
 var envList Envs
 
 func Init() *Envs {
-	log.Println("Initializing Image optimizer")
+	log.Println("Initializing Image Optimizer")
 	if err := envconfig.Process(context.Background(), &envList); err != nil {
 		log.Fatalf("Error loading .env file: %v\n", err)
 	}
@@ -109,7 +109,7 @@ func Init() *Envs {
 	}
 
 	log.Printf("Image Download Timeout: %d Seconds\n", envList.ImageDownloadTimeout)
-	log.Printf("Cache type: %s\n", envList.CacheType)
+	log.Printf("Cache Type: %s\n", envList.CacheType)
 	if envList.CacheType == "file" {
 		log.Printf("Your Images will be saved locally in the Hard Drive path: %s\n", envList.CachePath)
 	}

@@ -45,7 +45,7 @@ func (ic *PkgImgGoVips) CompressImage(c *CompressImageRequest) ([]byte, error) {
 	}
 
 	var exportParams *vips.ExportParams
-	switch c.Type {
+	switch c.NewType {
 	case "image/png":
 		exportParams = vips.NewDefaultPNGExportParams()
 	case "image/jpeg":
