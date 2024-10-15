@@ -118,6 +118,7 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "script-src 'none'; frame-src 'none'; sandbox;")
 	w.Header().Set("Content-Length", strconv.Itoa(len(optimizedResponse.ImageData)))
 	w.Header().Set("X-Cache", cacheMsg)
+	w.Header().Set("Vary", "Accept")
 
 	if optimizedResponse.ImageData == nil && optimizedResponse.Cache {
 		w.WriteHeader(http.StatusNotModified)
