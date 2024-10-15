@@ -16,26 +16,26 @@ import (
 )
 
 type Envs struct {
-	ApiPort             string `env:"API_PORT, required"`
-	ImageApiPath        string `env:"IMAGE_API_PATH"`
-	BrokenImagePath     string `env:"BROKEN_IMAGE_PATH"`
-	DefaultQuality      int    `env:"DEFAULT_QUALITY"`
-	MIS                 string `env:"MAX_IMAGE_SIZE, required"`
-	MaxImageSize        int64
-	CacheType           string `env:"CACHE_TYPE, required"`
-	CachePath           string `env:"CACHE_PATH"`
-	CacheExpiration     uint   `env:"CACHE_EXPIRATION"`
-	RedisHost           string `env:"REDIS_HOST"`
-	RedisPort           int    `env:"REDIS_PORT"`
-	RedisPassword       string `env:"REDIS_PASSWORD"`
-	RedisDB             int    `env:"REDIS_DB"`
-	MemcacheHost        string `env:"MEMCACHE_HOST"`
-	MemcachePort        int    `env:"MEMCACHE_PORT"`
-	MemcacheUser        string `env:"MEMCACHE_USERNAME"`
-	MemcachePassword    string `env:"MEMCACHE_PASSWORD"`
-	AuthorizedHostnames string `env:"AUTHORIZED_HOSTNAMES"`
-
-	BrokenImageData []byte
+	ApiPort              string `env:"API_PORT, required"`
+	ImageApiPath         string `env:"IMAGE_API_PATH"`
+	BrokenImagePath      string `env:"BROKEN_IMAGE_PATH"`
+	DefaultQuality       int    `env:"DEFAULT_QUALITY"`
+	MIS                  string `env:"MAX_IMAGE_SIZE, required"`
+	MaxImageSize         int64
+	CacheType            string `env:"CACHE_TYPE, required"`
+	CachePath            string `env:"CACHE_PATH"`
+	CacheExpiration      uint   `env:"CACHE_EXPIRATION"`
+	RedisHost            string `env:"REDIS_HOST"`
+	RedisPort            int    `env:"REDIS_PORT"`
+	RedisPassword        string `env:"REDIS_PASSWORD"`
+	RedisDB              int    `env:"REDIS_DB"`
+	MemcacheHost         string `env:"MEMCACHE_HOST"`
+	MemcachePort         int    `env:"MEMCACHE_PORT"`
+	MemcacheUser         string `env:"MEMCACHE_USERNAME"`
+	MemcachePassword     string `env:"MEMCACHE_PASSWORD"`
+	AuthorizedHostnames  string `env:"AUTHORIZED_HOSTNAMES"`
+	ImageDownloadTimeout int    `env:"IMAGE_DOWNLOAD_TIMEOUT"`
+	BrokenImageData      []byte
 }
 
 var envList Envs
@@ -44,6 +44,9 @@ func Init() *Envs {
 	log.Println("Initializing Image optimizer")
 	if err := envconfig.Process(context.Background(), &envList); err != nil {
 		log.Fatalf("Error loading .env file: %v\n", err)
+	}
+	if envList.ImageDownloadTimeout < 1 {
+		envList.ImageDownloadTimeout = 1
 	}
 	MaxImageSize, err := convertToBytes(envList.MIS)
 	if err != nil {
@@ -105,6 +108,7 @@ func Init() *Envs {
 
 	}
 
+	log.Printf("Image Download Timeout: %d Seconds\n", envList.ImageDownloadTimeout)
 	log.Printf("Cache type: %s\n", envList.CacheType)
 	if envList.CacheType == "file" {
 		log.Printf("Your Images will be saved locally in the Hard Drive path: %s\n", envList.CachePath)

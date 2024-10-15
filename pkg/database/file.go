@@ -41,9 +41,7 @@ func (db *PkgDatabaseFile) Get(ctx context.Context, key string) ([]byte, *time.T
 	filePath := fmt.Sprintf("%s/%s", db.path, key)
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, nil, nil
-		}
+		return nil, nil, nil
 	}
 	modTime := fileInfo.ModTime().UTC()
 	file, err := os.Open(filePath)

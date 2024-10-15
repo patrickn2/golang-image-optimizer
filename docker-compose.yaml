@@ -1,4 +1,17 @@
 services:
+  # image-optimizer:
+  #   build: .
+  #   restart: always
+  #   ports:
+  #     - "8080:8080"
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - redis
+  #     - memcached
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - MEMCACHE_HOST=memcached
   redis:
     image: redis:7.4-alpine
     restart: always
@@ -18,5 +31,6 @@ services:
     ports:
       - "11211:11211"
     restart: always
+
 volumes:
   redis-insight:

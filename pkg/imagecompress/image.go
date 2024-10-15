@@ -5,6 +5,7 @@ type CompressImageRequest struct {
 	Quality   int
 	Width     int
 	Height    int
+	Type      string
 }
 
 type PkgImgCompressInterface interface {

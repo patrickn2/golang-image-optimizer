@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/patrickn2/go-image-optimizer/config"
@@ -29,6 +31,9 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 	quality := r.URL.Query().Get("q")
 	ifModifiedSince := r.Header.Get("If-Modified-Since")
 	cacheControl := r.Header.Get("Cache-Control")
+	accept := r.Header.Get("Accept")
+
+	formats := strings.Split(accept, ",")
 
 	intQuality, err := strconv.Atoi(quality)
 	if err != nil || intQuality < 0 || intQuality > 100 {
@@ -50,22 +55,24 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request := &service.OptimizeRequest{
-		Ctx:               r.Context(),
-		ImageUrl:          imageUrl,
-		Width:             intWidth,
-		Height:            intHeight,
-		Quality:           intQuality,
-		IfModifiedSince:   ifModifiedSince,
-		CacheControl:      cacheControl,
-		MaxImageSize:      h.envs.MaxImageSize,
-		AuthorizedDomains: h.envs.AuthorizedHostnames,
+		Ctx:                  r.Context(),
+		ImageUrl:             imageUrl,
+		Width:                intWidth,
+		Height:               intHeight,
+		Quality:              intQuality,
+		IfModifiedSince:      ifModifiedSince,
+		CacheControl:         cacheControl,
+		MaxImageSize:         h.envs.MaxImageSize,
+		AuthorizedDomains:    h.envs.AuthorizedHostnames,
+		ImageDownloadTimeout: h.envs.ImageDownloadTimeout,
+		AcceptedFormats:      formats,
 	}
 
 	optimizedResponse, err := h.is.Optimize(request)
 	if err != nil {
 		switch err {
 		case service.ErrDomainNotAuthorized:
-			log.Printf("Error optimizing image: %v\n", err)
+			log.Printf("%v\n", err)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		case service.ErrInvalidImageUrl:
@@ -75,6 +82,7 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 				Quality:         intQuality,
 				Width:           intWidth,
 				Height:          intHeight,
+				AcceptedFormats: formats,
 			}
 			optimizedResponse, err = h.is.BrokenImage(brokenImageRequest)
 			if err != nil {
@@ -105,7 +113,7 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Date", lastModified.Format(http.TimeFormat))
 	w.Header().Set("Last-Modified", lastModified.Format(http.TimeFormat))
 	w.Header().Set("Age", strconv.Itoa(ageSeconds))
-	w.Header().Set("Content-Type", "image/webp")
+	w.Header().Set("Content-Type", fmt.Sprintf("%s", optimizedResponse.ImageFormat))
 	w.Header().Set("Cache-Control", "public, max-age=7200, must-revalidate")
 	w.Header().Set("Content-Security-Policy", "script-src 'none'; frame-src 'none'; sandbox;")
 	w.Header().Set("Content-Length", strconv.Itoa(len(optimizedResponse.ImageData)))
@@ -116,4 +124,5 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(optimizedResponse.ImageData)
+	log.Println("---------------------------------------------------")
 }
