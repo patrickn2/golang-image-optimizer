@@ -47,7 +47,7 @@ RUN go mod download
 COPY . .
 
 # RUN if [ "$TARGETARCH" = "amd64" ]; then go test ./...; fi
-RUN go build -o ${GOPATH}/bin/imgoptimizer ./cmd/api/main.go
+RUN go build -o ${GOPATH}/bin/gopizer ./cmd/api/main.go
 
 FROM debian:bookworm-slim
 
@@ -69,7 +69,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY --from=builder /go/bin/imgoptimizer /usr/local/bin/imgoptimizer
+COPY --from=builder /go/bin/gopizer /usr/local/bin/gopizer
 
 ENV VIPS_WARNING=0
 ENV MALLOC_ARENA_MAX=2
@@ -77,9 +77,8 @@ ENV LD_PRELOAD=/usr/local/lib/libjemalloc.so
 
 ENV PORT 8080
 
-# use unprivileged user
 USER nobody
 
-ENTRYPOINT ["/usr/local/bin/imgoptimizer"]
+ENTRYPOINT ["/usr/local/bin/gopizer"]
 
 EXPOSE ${PORT}

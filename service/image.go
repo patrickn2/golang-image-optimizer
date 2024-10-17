@@ -81,6 +81,7 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 	s := sha256.New()
 	s.Write([]byte(or.ImageUrl))
 	imageName := fmt.Sprintf("%x_%d_%d_%d_%v", s.Sum(nil), or.Quality, or.Width, or.Height, acceptWebp)
+
 	// Check if image is in the cache
 	optimizedImage, modified, err := is.ir.GetImage(or.Ctx, imageName)
 	if err != nil {
@@ -115,43 +116,45 @@ func (is *ImageService) Optimize(or *OptimizeRequest) (*OptimizeResponse, error)
 	}
 
 	// Check image size
-	client := &http.Client{
+	httpClient := &http.Client{
 		Timeout: time.Duration(or.ImageDownloadTimeout) * time.Second,
 	}
-	response, err := client.Head(or.ImageUrl)
-	if err != nil || response.StatusCode != 200 {
+	// Download Image Header
+	head, err := httpClient.Head(or.ImageUrl)
+	if err != nil || head.StatusCode != 200 {
 		if err == http.ErrHandlerTimeout {
 			return nil, ErrTimeout
 		}
 		return nil, ErrInvalidImageUrl
 	}
-	defer response.Body.Close()
+	defer head.Body.Close()
 
-	if response.ContentLength > or.MaxImageSize {
+	// Check Image Size
+	if head.ContentLength > or.MaxImageSize {
 		return nil, ErrInvalidImageSize
-
 	}
-	if !strings.HasPrefix(response.Header.Get("Content-Type"), "image/") {
+	// Check if it is an image
+	if !strings.HasPrefix(head.Header.Get("Content-Type"), "image/") {
 		return nil, ErrInvalidImageType
 	}
 
 	// Download image
-	response, err = client.Get(or.ImageUrl)
-	if err != nil || response.StatusCode != 200 {
+	res, err := httpClient.Get(or.ImageUrl)
+	if err != nil || res.StatusCode != 200 {
 		if err == http.ErrHandlerTimeout {
 			return nil, ErrTimeout
 		}
 		return nil, ErrInvalidImageUrl
 	}
-	defer response.Body.Close()
+	defer res.Body.Close()
 
 	var imageBuffer bytes.Buffer
-	_, err = imageBuffer.ReadFrom(response.Body)
+	_, err = imageBuffer.ReadFrom(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check Image Type Again (Protection against image manipulation)
+	// Check Image Type Again (Protection against type manipulation)
 	downloadedImageRealType := http.DetectContentType(imageBuffer.Bytes())
 	if !strings.HasPrefix(downloadedImageRealType, "image/") {
 		return nil, ErrInvalidImageType
@@ -252,6 +255,9 @@ func (is *ImageService) BrokenImage(bir *BrokenImageRequest) (*OptimizeResponse,
 
 func chooseImageFormat(imageFormat string, acceptFormats []string) string {
 	var acceptAvif bool
+	if imageFormat == "image/svg+xml" {
+		return "image/svg+xml"
+	}
 	for _, format := range acceptFormats {
 		switch format {
 		case "image/webp":

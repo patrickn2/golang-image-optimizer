@@ -1,36 +1,36 @@
 services:
-  # image-optimizer:
-  #   build: .
-  #   restart: always
-  #   ports:
-  #     - "8080:8080"
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - redis
-  #     - memcached
-  #   environment:
-  #     - REDIS_HOST=redis
-  #     - MEMCACHE_HOST=memcached
-  redis:
-    image: redis:7.4-alpine
+  gopizer:
+    build: .
     restart: always
     ports:
-      - "6380:6379"
-    environment:
-      REDIS_PASSWORD: secret
-  redis-insight:
-    image: redis/redisinsight:latest
-    restart: always
-    ports:
-      - "5540:5540"
-    volumes:
-      - redis-insight:/data
-  memcached:
-    image: memcached:latest
-    ports:
-      - "11211:11211"
-    restart: always
+      - "8080:8080"
+    env_file:
+      - .env.example
+    # depends_on:
+    #   - redis
+    #   - memcached
+    # environment:
+    #   - REDIS_HOST=redis
+    #   - MEMCACHE_HOST=memcached
+#   redis:
+#     image: redis:7.4-alpine
+#     restart: always
+#     ports:
+#       - "6380:6379"
+#     environment:
+#       REDIS_PASSWORD: secret
+#   redis-insight:
+#     image: redis/redisinsight:latest
+#     restart: always
+#     ports:
+#       - "5540:5540"
+#     volumes:
+#       - redis-insight:/data
+#   memcached:
+#     image: memcached:latest
+#     ports:
+#       - "11211:11211"
+#     restart: always
 
-volumes:
-  redis-insight:
+# volumes:
+#   redis-insight:

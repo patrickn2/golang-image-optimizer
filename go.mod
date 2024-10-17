@@ -11,9 +11,12 @@ require (
 )
 
 require (
+	github.com/CAFxX/httpcompression v0.0.9 // indirect
+	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davidbyttow/govips/v2 v2.15.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
 	golang.org/x/image v0.21.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/text v0.19.0 // indirect

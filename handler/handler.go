@@ -114,16 +114,16 @@ func (h *Handler) OptimizeImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Last-Modified", lastModified.Format(http.TimeFormat))
 	w.Header().Set("Age", strconv.Itoa(ageSeconds))
 	w.Header().Set("Content-Type", fmt.Sprintf("%s", optimizedResponse.ImageFormat))
-	w.Header().Set("Cache-Control", "public, max-age=7200, must-revalidate")
+	w.Header().Set("Cache-Control", "public, max-age=2592000")
 	w.Header().Set("Content-Security-Policy", "script-src 'none'; frame-src 'none'; sandbox;")
 	w.Header().Set("Content-Length", strconv.Itoa(len(optimizedResponse.ImageData)))
 	w.Header().Set("X-Cache", cacheMsg)
 	w.Header().Set("Vary", "Accept")
 
+	defer log.Println("---------------------------------------------------")
 	if optimizedResponse.ImageData == nil && optimizedResponse.Cache {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
 	w.Write(optimizedResponse.ImageData)
-	log.Println("---------------------------------------------------")
 }
